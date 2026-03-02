@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Polymarket Scanner — Real-Time Market Monitor</title>
+  <meta name="description" content="Real-time dashboard streaming newly created Polymarket prediction markets.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./base.css">
+  <link rel="stylesheet" href="./style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230a0b0d'/><path d='M8 22V10l6 8 6-8v12' stroke='%2334d399' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+</head>
+<body>
+  <a href="#main-content" class="sr-only">Skip to content</a>
+
+  <div class="dashboard sidebar-open" id="dashboard">
+    <!-- HEADER -->
+    <header class="header" role="banner">
+      <div class="header-left">
+        <div class="header-logo">
+          <!-- SVG Logo: geometric M mark -->
+          <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect width="32" height="32" rx="6" fill="var(--color-primary)"/>
+            <path d="M8 22V10l6 8 6-8v12" stroke="var(--color-text-inverse)" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="logo-text">Polymarket Scanner</span>
+        </div>
+      </div>
+
+      <div class="header-center">
+        <div class="connection-status disconnected" id="conn-status" role="status" aria-live="polite">
+          <span class="dot"></span>
+          <span id="conn-label">Disconnected</span>
+        </div>
+
+        <span class="header-stat">
+          <span id="stat-markets" class="stat-value">0</span> tracked
+        </span>
+        <span class="header-stat-divider"></span>
+        <span class="header-stat">
+          Last: <span id="stat-last-event" class="stat-value">—</span>
+        </span>
+        <span class="header-stat-divider"></span>
+        <span class="header-stat">
+          Up: <span id="stat-uptime" class="stat-value">0:00:00</span>
+        </span>
+      </div>
+
+      <div class="header-right">
+        <!-- Sound toggle -->
+        <button class="btn-icon sound-toggle" id="sound-toggle" aria-label="Toggle sound notifications" title="Toggle sound">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+          </svg>
+          <span class="muted-line"></span>
+        </button>
+
+        <!-- Sidebar toggle (mobile) -->
+        <button class="btn-icon mobile-sidebar-toggle" id="sidebar-toggle" aria-label="Toggle live feed">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </button>
+
+        <!-- Theme toggle -->
+        <button class="btn-icon theme-toggle" data-theme-toggle aria-label="Switch to light mode" title="Toggle theme">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="main" id="main-content">
+      <!-- KPI Row -->
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-label">Total Markets</div>
+          <div class="kpi-value" id="kpi-total">0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Today (24h)</div>
+          <div class="kpi-value" id="kpi-today">0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">This Hour</div>
+          <div class="kpi-value" id="kpi-hour">0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Uptime</div>
+          <div class="kpi-value" id="kpi-uptime">0:00:00</div>
+        </div>
+      </div>
+
+      <!-- Table Container -->
+      <div class="table-container">
+        <div class="table-toolbar">
+          <div class="search-input">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" id="search-input" placeholder="Filter markets..." aria-label="Filter markets">
+          </div>
+          <div class="toolbar-actions">
+            <span class="header-stat" style="font-size: var(--text-xs);" id="result-count"></span>
+            <button class="btn btn-secondary" id="export-csv" aria-label="Export markets as CSV">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Export CSV
+            </button>
+          </div>
+        </div>
+
+        <!-- Skeleton loading state -->
+        <div class="table-scroll" id="table-scroll">
+          <div id="skeleton-loader">
+            <div class="skeleton-row"><div class="skeleton skeleton-cell"></div><div class="skeleton skeleton-cell"></div><div class="skeleton skeleton-cell"></div><div class="skeleton skeleton-cell"></div><div class="skeleton skeleton-cell"></div></div>
+            <div class="skeleton-row"><div class="skeleton skeleton-cell"></div><div class="skeleton skeleton-cell"></div><div class="skeleton skeleton-cell"></div><div class="skeleton skeleton-cell"></div><div class="skeleton skeleton-cell"></div></div>
+            <div class="skeleton-row"><div class="skeleton skeleton-cell"></div><div class="skeleton skeleton-cell"></div><div class="skeleton skeleton-cell"></div><div class="skeleton skeleton-cell"></div><div class="skeleton skeleton-cell"></div></div>
+            <div class="skeleton-row"><div class="skeleton skeleton-cell"></div><div class="skeleton skeleton-cell"></div><div class="skeleton skeleton-cell"></div><div class="skeleton skeleton-cell"></div><div class="skeleton skeleton-cell"></div></div>
+            <div class="skeleton-row"><div class="skeleton skeleton-cell"></div><div class="skeleton skeleton-cell"></div><div class="skeleton skeleton-cell"></div><div class="skeleton skeleton-cell"></div><div class="skeleton skeleton-cell"></div></div>
+          </div>
+
+          <!-- Table (hidden until loaded) -->
+          <table class="markets-table" id="markets-table" style="display:none;">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Question</th>
+                <th>Outcomes</th>
+                <th>Market ID</th>
+                <th>Slug</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="markets-tbody"></tbody>
+          </table>
+
+          <!-- Empty state -->
+          <div class="empty-state" id="empty-state" style="display:none;">
+            <div class="empty-state-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+            </div>
+            <h3>Listening for new markets...</h3>
+            <p>New Polymarket prediction markets will appear here as they are created.</p>
+          </div>
+        </div>
+
+        <!-- Mobile cards view -->
+        <div class="mobile-cards" id="mobile-cards"></div>
+      </div>
+    </main>
+
+    <!-- SIDEBAR (Live Feed) -->
+    <aside class="sidebar" id="sidebar" aria-label="Live event feed">
+      <div class="sidebar-header">
+        <span class="sidebar-title">Live Feed</span>
+        <div style="display:flex;gap:var(--space-2);">
+          <button class="btn-icon" id="clear-feed" aria-label="Clear feed" title="Clear feed">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+          <button class="btn-icon" id="close-sidebar" aria-label="Close feed">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="feed-container" id="feed-container" role="log" aria-live="polite"></div>
+    </aside>
+
+    <!-- Mobile sidebar overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast" aria-live="assertive"></div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
